@@ -1,0 +1,27 @@
+{
+  "name": "fncode",
+  "version": "0.0.0",
+  "description": "Resolve a repo reference with fnc's exact resolver, then exec into the VS Code CLI at its local path",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fnrhombus/fncode.git"
+  },
+  "type": "module",
+  "bin": {
+    "fncode": "./bin/fncode.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "start": "bun run src/main.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.14",
+    "typescript": "^5.7.2"
+  }
+}

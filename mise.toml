@@ -1,0 +1,8 @@
+# Mise config — pin Bun, and auto-register the pre-commit hook on entry.
+# Idempotent; skipped silently if mise isn't active. Non-mise users:
+# run `git config core.hooksPath .githooks` once.
+[hooks]
+enter = "git config core.hooksPath .githooks"
+
+[tools]
+bun = "latest"
