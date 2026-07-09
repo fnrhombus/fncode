@@ -12,4 +12,15 @@ searching your GitHub orgs for the owner, cloning if the repo isn't on
 disk yet, and deriving the local path — then **execs** into the `code`
 CLI at that path, passing every remaining argument through unchanged.
 
-Scaffolding in progress.
+## Install
+
+```sh
+npm install -g fncode
+```
+
+Requires [Bun](https://bun.com) on the PATH — `fncode` runs under Bun (never
+Node) so it can call libc `execvp` via `bun:ffi` for true process-image
+replacement into `code`.
+
+Unix only for now; see [#1](https://github.com/fnrhombus/fncode/issues/1) for
+Windows support.
