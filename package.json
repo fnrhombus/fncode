@@ -1,11 +1,15 @@
 {
   "name": "fncode",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Resolve a repo reference with fnc's exact resolver, then exec into the VS Code CLI at its local path",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fnrhombus/fncode.git"
+    "url": "git+https://github.com/fnrhombus/fncode.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "type": "module",
   "bin": {

@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# On PRs: cancel stale runs when new commits arrive. On push to main: never
+# cancel — a publish that's already started must be allowed to finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -16,3 +22,53 @@ jobs:
       - run: bun install
       - run: bun run typecheck
       - run: bun test
+
+  # Runs on every push to main. release-please-action either opens/updates
+  # the release PR or, when that PR has just been merged, tags the release
+  # and reports release_created=true. On that path we publish to npm.
+  #
+  # Trusted-publisher OIDC (provider=GitHub Actions, repo=fnrhombus/fncode,
+  # workflow=ci.yml) must be registered on npmjs.com for package "fncode"
+  # before the first publish can succeed — no NPM_TOKEN secret is used.
+  # `id-token: write` + npm's built-in OIDC handshake do the auth, and the
+  # workflow filename must stay "ci.yml" to match what's registered.
+  publish:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # release-please creates tags + GitHub releases
+      pull-requests: write  # release-please opens/updates the release PR
+      id-token: write       # OIDC — npm trusted-publisher auth + provenance
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Falls back to GITHUB_TOKEN when RELEASE_PLEASE_TOKEN isn't set.
+          # A PAT is only needed if the release PR itself should trigger
+          # `verify` — GITHUB_TOKEN-authored PRs don't fire workflow events.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+
+      - uses: oven-sh/setup-bun@v2
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+
+      - run: bun install
+        if: ${{ steps.release.outputs.release_created }}
+
+      - run: npm publish --provenance
+        if: ${{ steps.release.outputs.release_created }}
