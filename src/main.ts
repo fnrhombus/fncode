@@ -6,13 +6,17 @@
 // fnclaude's, so fncode resolves to the same clones fnc would. The only
 // mutation vs. the user's argv is replacing the first arg (the ref) with its
 // resolved path; every later arg passes through byte-for-byte.
+//
+// The exec also happens *from* the resolved directory, so VS Code inherits it
+// as its working directory — see ./chdir-target.ts for why that matters.
 
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import { buildCodeArgv } from './build-argv';
+import { chdirTarget } from './chdir-target';
 import { execvp } from './exec';
 import { computeCloneDestination, buildCloneUrl } from './repo/clone';
 import { cloneRepo } from './repo/clone-exec';
@@ -131,6 +135,24 @@ switch (resolved.kind) {
   case 'error':
     process.stderr.write(`fncode: ${resolved.error}\n`);
     process.exit(1);
+}
+
+/**
+ * Filesystem adapter for chdirTarget. Deliberately a local copy of the one
+ * inside resolve-input.ts: that module mirrors fnclaude's resolver verbatim,
+ * and main is the boundary where filesystem side effects already live.
+ */
+function isDirectory(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+const launchDir = chdirTarget(resolvedPath, isDirectory);
+if (launchDir !== null) {
+  process.chdir(launchDir);
 }
 
 execvp('code', buildCodeArgv(resolvedPath, passthrough, args));

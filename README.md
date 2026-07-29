@@ -12,6 +12,13 @@ searching your GitHub orgs for the owner, cloning if the repo isn't on
 disk yet, and deriving the local path — then **execs** into the `code`
 CLI at that path, passing every remaining argument through unchanged.
 
+The exec happens **from** the resolved directory, so VS Code inherits it as
+its working directory. That's what `cd <repo> && code .` would give you:
+integrated terminals start in the repo, and cwd-sensitive tooling (mise,
+direnv) activates the project's environment instead of whatever was active
+where you ran `fncode`. One consequence — relative paths in the passthrough
+arguments resolve against the repo, not against your shell's directory.
+
 ## Install
 
 ```sh
